@@ -16,7 +16,8 @@ BUILD_LOG=$LOCAL_PATH/build.log     ###编译过后保存的log文件，必须和 mm -B -j8 2
 SEARCH_TAR="error: resource "       ###匹配原则###
 TEMP_SEARCH_TAR_FILE=$LOCAL_PATH/search.log     ###生成的临时文件###
 SRC=~/src/build/gm_7.0_mtk6750_u1/packages/apps/Settings        ###要移植的原代码目录###
-RES_FOLDER=res ##路径无法用正则表达式##
+#SRC=~/src/singleProjects/Settings        ###要移植的原代码目录###
+RES_FOLDER=res_gome ##路径无法用正则表达式##
 TARGET=$LOCAL_PATH/res_copy     ###资源拷贝过来后的存储路径###
 
 FILE_ARRAY=(anim color drawable* layout* menu mipmap* raw xml)  ##以文件形式存在的资源##
