@@ -1,0 +1,22 @@
+build/core/base_rules.mk:374: warning: ignoring old commands for target `out/target/product/gm12b/vendor/lib64/hw/fingerprint.default.so'
+[ 62% 10/16] Ensuring Jack server is installed and started
+Jack server already installed in "/home/yangzhuoxun/.jack-server"
+Server is already running
+[ 68% 11/16] AAPT2 link out/target/product/gm12b/obj/APPS/Settings_intermediates/package-res.apk
+packages/apps/Settings/res_gome/drawable/faceunlock_preference_layout_background_selector.xml:4: error: resource color/ic_settings_faceunlock_preference_background_press_color (aka com.android.settings:color/ic_settings_faceunlock_preference_background_press_color) not found.
+packages/apps/Settings/res_gome/drawable/iris_button_bg.xml:4: error: resource drawable/iris_button_pressed (aka com.android.settings:drawable/iris_button_pressed) not found.
+packages/apps/Settings/res_gome/drawable/iris_button_bg.xml:5: error: resource drawable/iris_button_unpressed (aka com.android.settings:drawable/iris_button_unpressed) not found.
+packages/apps/Settings/res_gome/layout/face_unlock_main.xml:201: error: resource string/ic_default_face_scan_face_me_summary (aka com.android.settings:string/ic_default_face_scan_face_me_summary) not found.
+packages/apps/Settings/res_gome/layout/face_unlock_main.xml:250: error: resource drawable/guide_bottom_circle_selector (aka com.android.settings:drawable/guide_bottom_circle_selector) not found.
+packages/apps/Settings/res_gome/layout/face_unlock_main.xml:259: error: resource drawable/guide_bottom_circle_selector (aka com.android.settings:drawable/guide_bottom_circle_selector) not found.
+packages/apps/Settings/res_gome/layout/face_unlock_scan_main.xml:30: error: resource drawable/gome_bg_facecode_record_circle_3 (aka com.android.settings:drawable/gome_bg_facecode_record_circle_3) not found.
+packages/apps/Settings/res_gome/layout/face_unlock_scan_main.xml:37: error: resource drawable/gome_bg_facecode_record_circle_1 (aka com.android.settings:drawable/gome_bg_facecode_record_circle_1) not found.
+packages/apps/Settings/res_gome/layout/face_unlock_scan_main.xml:44: error: resource drawable/gome_bg_facecode_record_circle_2 (aka com.android.settings:drawable/gome_bg_facecode_record_circle_2) not found.
+packages/apps/Settings/res_gome/layout/face_unlock_scan_main.xml:52: error: resource color/colorAccent (aka com.android.settings:color/colorAccent) not found.
+packages/apps/Settings/res_gome/layout/face_unlock_scan_main.xml:75: error: resource color/ic_settings_faceunlock_entry_text_color (aka com.android.settings:color/ic_settings_faceunlock_entry_text_color) not found.
+
+ERROR: /home/yangzhuoxun/src/build/mtk_8.0_6757_develop/packages/apps/Settings/src/com/gome/settings/faceunlock/FaceUnlockScanActivity.java:64.13: WeakHandler cannot be resolved to a type
+ERROR: /home/yangzhuoxun/src/build/mtk_8.0_6757_develop/packages/apps/Settings/src/com/gome/settings/faceunlock/FaceUnlockScanActivity.java:248.9: WeakHandler cannot be resolved to a type
+ERROR: /home/yangzhuoxun/src/build/mtk_8.0_6757_develop/packages/apps/Settings/src/com/android/settings/localepicker/LocaleListEditor.java:214.44: locale_unselect_all cannot be resolved or is not a field
+packages/apps/Settings/res_gome/layout/switch_bar_gome.xml:43: error: resource string/XXXXXXXXXXXXXX (aka com.android.settings:string/XXXXXXXXXXXXXX) not found.
+[100% 16/16] Install: out/target/product/gm12b/system/priv-app/Settings/Settings.apk
