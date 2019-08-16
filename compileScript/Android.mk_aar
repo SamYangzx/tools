@@ -1,0 +1,70 @@
+LOCAL_PATH:= $(call my-dir)
+include $(CLEAR_VARS)
+
+LOCAL_PACKAGE_NAME := FHDuotelLauncher
+LOCAL_CERTIFICATE := platform
+LOCAL_PRIVILEGED_MODULE := true
+
+LOCAL_STATIC_ANDROID_LIBRARIES := \
+	android-support-v4 \
+	android-support-v7-recyclerview 
+
+
+LOCAL_SRC_FILES := \
+        $(call all-java-files-under, src) 
+LOCAL_ASSET_DIR :=$(LOCAL_PATH)/assets
+LOCAL_RESOURCE_DIR := $(LOCAL_PATH)/res \
+		frameworks/support/v7/recyclerview/res
+LOCAL_USE_AAPT2 := true
+LOCAL_AAPT_FLAGS := \
+    --auto-add-overlay \
+    --extra-packages android.support.v7.recyclerview \
+    --extra-packages com.rokid.sdk.api \  
+
+LOCAL_MODULE_TAGS := optional
+
+LOCAL_PRIVATE_PLATFORM_APIS := true
+
+ALL_DEFAULT_INSTALLED_MODULES += $(LOCAL_PACKAGE_NAME)
+LOCAL_MANIFEST_FILE := AndroidManifest.xml
+LOCAL_STATIC_JAVA_LIBRARIES := eventbus
+LOCAL_STATIC_JAVA_LIBRARIES += fastjson
+LOCAL_STATIC_JAVA_LIBRARIES += glideduotel
+LOCAL_STATIC_JAVA_LIBRARIES += xutils
+LOCAL_STATIC_JAVA_LIBRARIES += zxing
+LOCAL_STATIC_JAVA_LIBRARIES += mojiweather
+LOCAL_STATIC_JAVA_LIBRARIES += pjsip
+LOCAL_STATIC_JAVA_LIBRARIES += okhttp3_integration
+
+LOCAL_STATIC_JAVA_AAR_LIBRARIES := RKAiSdk
+
+LOCAL_PROGUARD_FLAG_FILES := proguard.flags
+LOCAL_PROGUARD_ENABLED := disabled
+
+include $(BUILD_PACKAGE)
+include $(CLEAR_VARS)
+LOCAL_PREBUILT_STATIC_JAVA_LIBRARIES :=  \
+	eventbus:libs/eventbus-3.0.0.jar \
+	fastjson:libs/fastjson-1.2.58.jar \
+	glideduotel:libs/glide-3.6.0.jar \
+	xutils:libs/xutils-3.5.0.jar \
+	zxing:libs/zxing.jar \
+	mojiweather:libs/moji-duotel.jar \
+	pjsip:libs/pjsipLibrary.jar \
+	okhttp3_integration:libs/okhttp3-integration-1.4.0.jar \
+    RKAiSdk:libs/RKAiSdk.aar 
+include $(BUILD_MULTI_PREBUILT)
+########################
+
+include $(CLEAR_VARS)
+LOCAL_MODULE := libpjsua2.so
+LOCAL_MODULE_CLASS := lib
+LOCAL_MODULE_PATH := $(TARGET_OUT)/lib
+LOCAL_SRC_FILES := libs/armeabi/libpjsua2.so
+ALL_DEFAULT_INSTALLED_MODULES += $(LOCAL_MODULE)
+include $(BUILD_PREBUILT)
+########################
+
+#endif
+# Use the folloing include to make our test apk.
+include $(call all-makefiles-under,$(LOCAL_PATH))
