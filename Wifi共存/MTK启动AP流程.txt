@@ -1,0 +1,131 @@
+配置ap: TetherWifiSettings.java (AP设置界面)---com.mediatek.settings.wifi.hotspot.TetherWifiSettings--()WifiApWpsDialog.java(mWifiManager.getWifiHotspotManager().startApWps)--
+ MtkWifiServiceImpl.startApWps--WifiApStateMachine.startApWpsCommand--(WifiStateMachine.sendMessage)MtkSoftApManager.M_CMD_START_AP_WPS
+ --WifiApStateMachine.processDefaultStateMessage/processSoftApStateMessage--mtkSoftApManager.startApWpsCommand--SoftApStateMachine.sendMessage()(AP状态自带一个状态机SoftApStateMachine，包含两种状态IdleState和StartedState)
+
+打开ap流程:
+TetherWifiSettings.java--WifiTetherSwitchBarController--ConnectivityManager.startTethering
+---ConnectivityService.startTethering--Tethering.enableTetheringInternal--Tethering.setWifiTethering(这里要确定是否会关闭wifi)--WifiManager.startSoftAp--WifiService.startSoftAp(传入的wifiConfig为null)--WifiController.sendMessage(CMD_SET_AP)--
+WifiStateMachine.setHostApRunning--WifiStateMachine.SoftApState.enter(看SoftApStartingStateEnter，获取ApInterface接口，配置热点信息，并启动热点)--
+    1.WifiNative.setupForSoftApMode
+    2.checkAndSetConnectivityInstance
+    3.SoftApManager.start
+        WifiStateMachine.setWifiApState
+            BatteryStats.noteWifiOn()
+            WifiApState.set(wifiApState)
+            Context.sendStickyBroadcastAsUser
+    4.WifiStateTracker.updateState
+MtkSoftApManager.IdleState.processMessage(更新状态，注册监听)--MtkSoftApManager.startSoftAp--
+ApInterface.startHostapd---ap_interface_impl.StartHostapd（system/connectivity/wificond）--hostapd_manager.StartHostapd (frameworks/opt/net/wifi/libwifi_system)
+
+----------------
+IApInterface获取流程：
+WifiNative.setupForSoftApMode
+    1.startHalIfNecessary--WifiVendorHal.startVendorHal--
+        a.HalDeviceManager.start--startWifi
+            a)Wifi.start--wifi.cpp(start)       //应该没影响
+                initializeLegacyHal
+                WifiChip(kChipId, legacy_hal_, mode_controller_); 
+            b)initIWifiChipDebugListeners       //应该没影响
+            c)managerStatusListenerDispatch     //应该没影响
+        b.HalDeviceManager.createApIface--createIfaceIfPossible--executeChipReconfiguration
+            --wifi_chip.configureChip（hardware/interfaces/wifi/1.1/default）--handleChipConfiguration(里面设置了只支持一种模式)--
+                1)Wifi_mode_controller.changeFirmwareMode
+                    A:driver_tool.LoadDriver   理论上不会报错
+                        A)wifi_hal_common.wifi_load_driver
+                    B:driver_tool.changeFirmwareMode
+                        A)wifi_get_fw_path
+                        B)wifi_change_fw_path
+                    
+                2)wifi_legacy_hal.start
+        c.HalDeviceManager.getChip(会重置mIWifiChip) //WifiChip有wifi和ap的所有接口
+    2.WificondControl.setupDriverForSoftApMode（未见影响wifi）--Wificond.createApInterface--Server(cpp).createApInterface
+
+若驱动加载失败：Failed to load WiFi driver  理论上不会报错
+若固件切换失败：Failed to change firmware mode
+----------
+hostapd.conf配置加载流程：
+WifiApConfigStore.getApConfiguration--WifiApConfigStore.loadApConfiguration(如果为null就调用getDefaultApConfiguration)
+
+
+
+ 
+打开和关闭热点的方法 
+mCm.startTethering(ConnectivityManager.TETHERING_WIFI, true, mStartTetheringCallback, mHandler);
+mCm.stopTethering(ConnectivityManager.TETHERING_WIFI);
+=====================
+关闭热点流程：
+ConnectivityManager.stopTethering--ConnectivityService.stopTethering--Tethering.setWifiTethering--WifiServiceImpl.stopSoftApInternal--WifiApCOntroller.--WifiStateMachine.setHostApRunning--SoftApManager.stop----MtkSoftApManager.stopSoftAp--
+ap_interface_impl.StopHostapd---
+    1.hostapd_manager.StopHostapd--
+    2.Interface_tool.SetUpState(interface_name_.c_str(), false) // Take down the interface.
+    3.netlink_utils_->SetInterfaceMode //重新设置为sta 模式--
+
+
+============
+打开wifi流程：
+WifiController.CMD_WIFI_TOGGLED--WifiStateMachine.CMD_START_SUPPLICANT--
+    1.wifiNative.setupForClientMode--
+        1)startHalIfNecessary;
+        2)WificondControl.setupDriverForClientMode--Wificond(server.cpp).createClientInterface--
+            A:server.SetupInterface
+                netlink_utils_->GetInterfaces--netlink_manager_->SendMessageAndGetResponses
+====================
+关闭wifi流程：
+WifiManager.setWifiEnabled--wifiServiceImpl.setWifiEnabled--WifiStaController.ApStaDisabledState--
+    1.WifiStateMachine.setSupplicantRunning--CMD_STOP_SUPPLICANT--WaitForP2pDisableState--SupplicantStoppingState--
+        1)handleNetworkDisconnect();
+        2)WifiNative.disableSupplicant
+        3)
+    2.WifiStateMachine.clearANQPCache
+----
+后半部分：
+wifiNative.tearDown--WifiNative.stopHalIfNecessary--WifiVendorHal.stopVendorHal
+
+
+----
+wifiNative.tearDown函数解析：
+    1.stopHalIfNecessary （会把hal层信息清除）
+    2.WificondControl.tearDownInterfaces（）
+        1）WificondScanner.unsubscribeScanEvents
+        2)Wificond.tearDownInterfaces
+        3)Interface之类置空
+        4)com.mediatek.server.wifi.MtkGbkSsid.clear
+
+./frameworks/opt/net/wifi/libwifi_system/hostapd_manager.cpp
+==========
+wifi扫描流程：
+WificondScannerImpl.java--WifiNative.scan--WificondControl(不是一个类).scan--WificondScanner.scan(通过jni binder调用)--scanner_impl.scan--scan_utils.Scan--netlink_manager_->SendMessageAndGetAckOrError--SendMessageInternal(函数执行结果返回true,第二个参数中的值为false。send函数不知道。)
+
+
+===
+搜索log:
+android.hardware.wifi@1.0-service|ConnectivityManager|ConnectivityService|WifiStaController|WifiAPController|WifiEnabler|HalDeviceManager|WifiVendorHal|WificondControl|MtkSoftApManager|WifiApStateMachine|WifiStateMachine|WifiController|yzx|crash
+
+==
+using hidl_return_util::validateAndCall
+
+wifi驱动加载状态判断属性：wlan.driver.status
+/vendor/bin/hostapd  -d    /data/misc/wifi/hostapd/hostapd.conf
+setprop ctrl.start hostapd  -d    /data/misc/wifi/hostapd/hostapd.conf
+/vendor/bin/hostapd -e /data/misc/wifi/entropy.bin  /data/misc/wifi/hostapd.conf
+/vendor/etc/init/hostapd.android.rc
+
+
+========
+注意：
+1.在关闭wifi或热点时，应该在2者都关闭时才调用stop方法。
+2.
+wifi 扫描kernel4.4  nl80211.c
+
+==
+IP地址分配：
+ifconfig ap0 192.168.126.1 netmask 255.255.255.0       这步是给softap的interface设置ip
+dnsmasq --no-daemon --no-resolv --no-poll --dhcp-range=192.168.126.10,192.168.126.200,100h 
+iptables -t nat -A POSTROUTING -s 192.168.126.0/24 -o ap0 -j MASQUERADE
+iptables -t nat -A POSTROUTING -s 192.168.126.0/24 -o wlan0 -j MASQUERADE
+iptables -t nat -nvL        查看
+
+echo 1 > /proc/sys/net/ipv4/ip_forward
+iptables -t nat -A POSTROUTING -o wlan0 -j MASQUERADE                                ===》 eth0改成你目前可以正常上网的interface
+iptables -A FORWARD -i ap0 -o wlan0 -m state --state ESTABLISHED,RELATED -j ACCEPT   ===》eth0改成你目前可以正常上网的interface   ap0改成你目前作为softap的interface
+iptables -A FORWARD -i ap0 -o wlan0 -j ACCEPT                                        ===》eth0改成你目前可以正常上网的interface   ap0改成你目前作为softap的interface

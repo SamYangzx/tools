@@ -1,0 +1,111 @@
+TetherSettings.java 热点设置界面；
+
+====
+在WifiStateMachine 中不再处理CMD_START_AP相关的命令；
+
+4.4版本中打开AP的方法：
+ case CMD_START_AP:
+    mWifiMode = 1;
+    if (mWifiNative.loadDriver(mWifiMode)) {
+        setWifiApState(WIFI_AP_STATE_ENABLING);
+        transitionTo(mSoftApStartingState);
+    } else {
+        loge("Failed to load driver for softap");
+        setWifiApState(WIFI_AP_STATE_FAILED);
+    }
+
+修改后：
+	mWifiMode = 1;
+	if (mWifiNative.loadDriver(mWifiMode)) {
+		setWifiApState(WIFI_AP_STATE_ENABLING);
+		//transitionTo(mSoftApStartingState);
+		mApStateMachineState = WIFI_AP_STARTING;
+		SoftApStartingStateEnter();
+	} else {
+		loge("Failed to load driver for softap");
+		setWifiApState(WIFI_AP_STATE_FAILED);
+	}
+函数SoftApStartingStateEnter 就是从SoftApStartingState的enter函数中获取出来的。
+	private void SoftApStartingStateEnter() {
+		final Message message = getCurrentMessage();
+		if (message.what == CMD_START_AP) {
+			final WifiConfiguration config = (WifiConfiguration) message.obj;
+
+			if (config == null) {
+				mWifiApConfigChannel.sendMessage(CMD_REQUEST_AP_CONFIG);
+			} else {
+				mWifiApConfigChannel.sendMessage(CMD_SET_AP_CONFIG, config);
+				startSoftApWithConfig(config);
+			}
+		} else {
+			throw new RuntimeException("Illegal transition to SoftApStartingState: " + message);
+		}
+	}
+
+-----
+//InitialState.enter
+	private void SoftApInitialStateEnter() {  
+		if (mWifiApConfigChannel == null) {
+			mWifiApConfigChannel = new AsyncChannel();
+			WifiApConfigStore wifiApConfigStore = WifiApConfigStore.makeWifiApConfigStore(
+					mContext, getHandler());
+			wifiApConfigStore.loadApConfiguration();
+			mWifiApConfigChannel.connectSync(mContext, getHandler(),
+					wifiApConfigStore.getMessenger());
+		}
+	}
+
+===============
+8.1方法：
+DefaultState: WifiApStateMachine.processDefaultStateMessage
+InitialState: CMD_START_AP: transitionTo(mSoftApState); //很可能没走到。
+SoftApState：默认消息： WifiApStateMachine.processSoftApStateMessage
+
+8.1上有SoftApManager，MtkSoftApManager去处理AP模式下的情况。
+
+=============
+具体如下：
+ final Message message = getCurrentMessage();
+            if (message.what != CMD_START_AP) {
+                throw new RuntimeException("Illegal transition to SoftApState: " + message);
+            }
+            SoftApModeConfiguration config = (SoftApModeConfiguration) message.obj;
+            mMode = config.getTargetMode();
+
+            IApInterface apInterface = null;
+            Pair<Integer, IApInterface> statusAndInterface = mWifiNative.setupForSoftApMode();
+            if (statusAndInterface.first == WifiNative.SETUP_SUCCESS) {
+                apInterface = statusAndInterface.second;
+            } else {
+                incrementMetricsForSetupFailure(statusAndInterface.first);
+            }
+            if (apInterface == null) {
+                setWifiApState(WIFI_AP_STATE_FAILED,
+                        WifiManager.SAP_START_FAILURE_GENERAL, null, mMode);
+                /**
+                 * Transition to InitialState to reset the
+                 * driver/HAL back to the initial state.
+                 */
+                transitionTo(mInitialState);
+                return;
+            }
+
+            try {
+                mIfaceName = apInterface.getInterfaceName();
+            } catch (RemoteException e) {
+                // Failed to get the interface name. The name will not be available for
+                // the enabled broadcast, but since we had an error getting the name, we most likely
+                // won't be able to fully start softap mode.
+            }
+
+            checkAndSetConnectivityInstance();
+            mSoftApManager = mWifiInjector.makeSoftApManager(mNwService,
+                                                             new SoftApListener(),
+                                                             apInterface,
+                                                             config.getWifiConfiguration());
+            mSoftApManager.start();
+            mWifiStateTracker.updateState(WifiStateTracker.SOFT_AP);
+===============================================
+frameworks/opt wifi模块 libwifi-service
+
+
