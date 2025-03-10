@@ -3,7 +3,9 @@
 
 注意：
 反编译出来的aidl文件需要手动删除Stub, Default 等不需要的类。
+java 类不太适用。
 
 用法：
-修改 jar2Src.py 中 jar_path 为自己的jar 名字。
+1.修改 jar2Src.py 中 jar_path 为自己的jar 名字。
+2.运行 jar2Src.py
 
